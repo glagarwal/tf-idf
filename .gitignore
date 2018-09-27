@@ -1,0 +1,5 @@
+#Ignore MacOS file
+.DS_Store
+
+#except
+!.gitignore
