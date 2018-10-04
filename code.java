@@ -95,10 +95,7 @@ public class code extends Configured implements Tool {
 		
 	}
 
-	public int run(String[] args) throws Exception {
-
-		return 1;
-	}
+	
 
 	public static class Map1 extends Mapper<LongWritable, Text, Text, IntWritable> {
 		
