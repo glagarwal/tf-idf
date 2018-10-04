@@ -1,6 +1,7 @@
 # tf-idf
 
 Here we have used a subset of the dataset presented in this paper:
+```
 @InProceedings{maas-EtAl:2011:ACL-HLT2011,
   author    = {Maas, Andrew L.  and  Daly, Raymond E.  and  Pham, Peter T.  and  Huang, Dan  and  Ng, Andrew Y.  and  Potts, Christopher},
   title     = {Learning Word Vectors for Sentiment Analysis},
@@ -12,3 +13,4 @@ Here we have used a subset of the dataset presented in this paper:
   pages     = {142--150},
   url       = {http://www.aclweb.org/anthology/P11-1015}
 }
+```
