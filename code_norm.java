@@ -160,7 +160,7 @@ public class code_norm extends Configured implements Tool {
  
 		}
 	}
-
+ 
 	public static class Reduce2 extends
 			Reducer<Text, Text, Text, Text> {
 		@Override
