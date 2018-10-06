@@ -1,6 +1,5 @@
 package td;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +12,8 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -28,13 +29,20 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 public class code extends Configured implements Tool {
 
 	private static final Logger LOG = Logger.getLogger(code.class);
-	static int length = 555;
+	static int length = 0;
 	public static void main(String[] args) throws Exception {
 
 		Configuration conf = new Configuration();
 		Path input = new Path(args[0]);
 		Path output = new Path(args[1]);
 		
+
+
+		FileSystem fs = FileSystem.get(conf);	 
+		ContentSummary cs = fs.getContentSummary(input);
+		length = (int) cs.getFileCount();
+		System.out.println("************ " +length);
+
 		//length = new File(args[0]).list().length;
 		//System.out.println(length);
 		
@@ -57,7 +65,7 @@ public class code extends Configured implements Tool {
 		if (!(job1.waitForCompletion(true)))
 			System.exit(1);
 
-		Job job2 = Job.getInstance(conf, "freqWordInDoc");
+		Job job2 = Job.getInstance(conf, "finalTFIDF");
 		job2.setJarByClass(code.class);
 
 		job2.setMapperClass(Map2.class);
@@ -74,28 +82,14 @@ public class code extends Configured implements Tool {
 
 		if (!(job2.waitForCompletion(true)))
 			System.exit(1);
-		
-		Job job3 = Job.getInstance(conf, "finalTFIDF");
-		job3.setJarByClass(code.class);
-
-		job3.setMapperClass(Map3.class);
-		job3.setReducerClass(Reduce3.class);
-
-		job3.setOutputKeyClass(Text.class);
-		job3.setOutputValueClass(Text.class);
-
-		job3.setInputFormatClass(TextInputFormat.class);
-		job3.setOutputFormatClass(TextOutputFormat.class);
-
-		FileInputFormat.addInputPath(job3, new Path(output, "output2"));
-		FileOutputFormat.setOutputPath(job3, new Path(output, "output3"));
-
-		if (!(job3.waitForCompletion(true)))
-			System.exit(1);
+ 
 		
 	}
 
-	
+	public int run(String[] args) throws Exception {
+
+		return 1;
+	}
 
 	public static class Map1 extends Mapper<LongWritable, Text, Text, IntWritable> {
 		
@@ -143,58 +137,17 @@ public class code extends Configured implements Tool {
 			String[] parseValues = string.split("\t");
 			String[] parseNames  = parseValues[0].split("@");
  
-			Text docName = new Text(parseNames[1]);
-			Text wordAndCount = new Text(parseNames[0]+"="+parseValues[1]);
-			context.write(docName, wordAndCount);
+			Text word = new Text(parseNames[0]);
+			Text docAndCount = new Text(parseNames[1]+"="+parseValues[1]);
+			//System.out.println(word+", "+ docAndCount);
+			context.write(word, docAndCount);
  
 		}
 	}
+
+	
 
 	public static class Reduce2 extends
-			Reducer<Text, Text, Text, Text> {
-		@Override
-		public void reduce(Text docName, Iterable<Text> wordCount, Context context) throws IOException, InterruptedException {
-			
-			String docname = docName.toString();
-			List<String> cache = new ArrayList<String>();
-			int totalWords = 0;
-			for (Text count : wordCount) {
-				
-				String string = count.toString();
-				cache.add(string); 
-				String[] parseValues = string.split("=");
-				totalWords+= Integer.parseInt(parseValues[1]); 	
-			} 
-			for (String string : cache) { 
-				String[] parseValues = string.split("="); 
-				//System.out.println(string);
-				String totalWordsS = String.valueOf(totalWords);
-				Text docAndTotal = new Text(docname+"="+ totalWordsS);
-				Text wordAndCount = new Text(parseValues[0]+"="+parseValues[1]);
-				context.write(docAndTotal, wordAndCount);
-			} 
-			
-		}
-	}
-	
-	public static class Map3 extends Mapper<LongWritable, Text, Text, Text> { 
-
-		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-			String string = value.toString();
-			String[] parseValues = string.split("\t");
-			String[] docAndLength  = parseValues[0].split("=");
-			String[] wordAndCount  = parseValues[1].split("=");
-			
-			//System.out.println(wordAndCount[0]+": "+docAndLength[0]+"="+ wordAndCount[1]+"/"+docAndLength[1] );
-			
-			Text word = new Text(wordAndCount[0]);
-			Text docAndRatio = new Text(docAndLength[0]+"="+ wordAndCount[1]+"/"+docAndLength[1]);
-			context.write(word, docAndRatio);
- 
-		}
-	}
-
-	public static class Reduce3 extends
 			Reducer<Text, Text, Text, Text> {
 		@Override
 		public void reduce(Text word, Iterable<Text> wordCount, Context context) throws IOException, InterruptedException {
@@ -210,17 +163,15 @@ public class code extends Configured implements Tool {
 			
 			for (String string : cache) { 
 				String[] parseValues = string.split("="); 
-				String[] parseTF = parseValues[1].split("/");
 				//System.out.println(string);
 				String docName = parseValues[0];
-				double wordcount = Double.valueOf(parseTF[0]);
-				double docLengh = Double.valueOf(parseTF[1]);
-				double tf = wordcount/docLengh;
+				double wordcount = Double.valueOf(parseValues[1]); 
+				double tf = wordcount;
 				double preidf = ((double) length)/((double) totalDocs);
 				double idf = Math.log(preidf)/Math.log(2);
 				double tfidf = tf*idf;
 				
-				System.out.println(wordString+"\t"+docName +"\t"+ tfidf);
+				//System.out.println(wordString+"\t"+docName +"\t"+ tfidf);
 				Text wordAndDoc = new Text(wordString+"\t"+docName);
 				Text wordAndCount = new Text(String.valueOf(tfidf));
 				context.write(wordAndDoc, wordAndCount);
