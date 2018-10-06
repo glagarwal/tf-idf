@@ -128,7 +128,7 @@ public class code extends Configured implements Tool {
 			}
 			context.write(word, new IntWritable(sum));
 		}
-	}
+	} 
 
 	public static class Map2 extends Mapper<LongWritable, Text, Text, Text> { 
 		public void map(LongWritable key, Text value, Context context)
